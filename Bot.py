@@ -2,13 +2,6 @@
 Telegram Price Bot — всё в одном файле.
 Автор: @Troudam
 Запуск: python bot.py
-
-Установка зависимостей:
-    pip install aiogram
-
-Установка токена (любой способ):
-    1) вставь прямо в BOT_TOKEN ниже
-    2) или переменная окружения: export BOT_TOKEN="123:AA..."
 """
 
 import asyncio
@@ -25,6 +18,7 @@ from aiogram.types import (
     InlineKeyboardButton,
 )
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiohttp import web  # Добавлено для Render
 
 # ═══════════════════════════════════════════════════════════
 #  НАСТРОЙКИ — меняй здесь
@@ -217,10 +211,21 @@ async def cb_service(call: CallbackQuery):
 # ─────────────── Запуск ───────────────
 async def main():
     if not BOT_TOKEN or "ВСТАВЬ_СЮДА" in BOT_TOKEN:
-        raise SystemExit(
-            "❌ Токен не установлен!\n"
-            "   Вставь токен в BOT_TOKEN (строка ~34) или задай переменную окружения BOT_TOKEN."
-        )
+        raise SystemExit("❌ Токен не установлен!")
+    
+    # --- Фейковый веб-сервер для Render ---
+    async def handle(request):
+        return web.Response(text="Bot is alive")
+
+    app = web.Application()
+    app.router.add_get('/', handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.getenv("PORT", 8080))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    # --------------------------------------
+
     logger.info("🚀 Бот запущен. Нажми Ctrl+C для остановки.")
     await dp.start_polling(bot)
 
